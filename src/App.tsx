@@ -3,6 +3,7 @@ import Home from "./pages/Home.tsx";
 import NavBar from "./components/NavBar.tsx";
 import Nba from "./pages/Nba.tsx";
 import Mlb from "./pages/Mlb.tsx";
+import {useAuth} from "./contexts/AuthContext.tsx";
 
 function App() {
 
