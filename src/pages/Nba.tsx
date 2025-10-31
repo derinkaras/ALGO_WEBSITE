@@ -190,8 +190,28 @@ function simulate(mainData: Row[]): SimRow[] {
     return out;
 }
 
+/* ───────── NEW: dataset selector config ───────── */
+type DatasetKey = "live" | "2024" | "2023";
+const DATASETS: Record<DatasetKey, { label: string; mainPath: string; todayPath?: string }> = {
+    live: {
+        label: "Live (Current)",
+        mainPath: "data/database.json",
+        todayPath: "data/dayOf.json",
+    },
+    "2024": {
+        label: "2024 Database",
+        mainPath: "data/2024Database.json",
+    },
+    "2023": {
+        label: "2023 Database",
+        mainPath: "data/2023Database.json",
+    },
+};
+
 /* ───────── Component ───────── */
 const Nba: React.FC = () => {
+    const [selectedDataset, setSelectedDataset] = useState<DatasetKey>("live");
+
     const [mainData, setMainData] = useState<Row[]>([]);
     const [todayData, setTodayData] = useState<Row[]>([]);
     const [loading, setLoading] = useState(true);
@@ -199,21 +219,32 @@ const Nba: React.FC = () => {
     const [selectedIndexTop, setSelectedIndexTop] = useState<number | null>(null);
     const [selectedIndexBottom, setSelectedIndexBottom] = useState<number | null>(null);
 
+    // load current/archived data based on selected dataset
     useEffect(() => {
         let cancelled = false;
         (async () => {
             try {
                 setLoading(true);
-                const [m, d] = await Promise.all([
-                    fetch(`${base}data/database.json`, { cache: "no-store" }),
-                    fetch(`${base}data/dayOf.json`, { cache: "no-store" }),
-                ]);
-                if (!m.ok) throw new Error(`database.json ${m.status}`);
-                if (!d.ok) throw new Error(`dayOf.json ${d.status}`);
-                const jm = await m.json();
-                const jd = await d.json();
+                setSelectedIndexTop(null);
+                setSelectedIndexBottom(null);
+
+                const cfg = DATASETS[selectedDataset];
+
+                // Always load main
+                const mainResp = await fetch(`${base}${cfg.mainPath}`, { cache: "no-store" });
+                if (!mainResp.ok) throw new Error(`${cfg.mainPath} ${mainResp.status}`);
+                const jm = await mainResp.json();
                 const rowsMain = pickRows(jm, PREFERRED_MAIN_TABLES);
-                const rowsToday = pickRows(jd, PREFERRED_TODAY_TABLES);
+
+                // Load TODAY only for live dataset; otherwise clear
+                let rowsToday: Row[] = [];
+                if (cfg.todayPath) {
+                    const todayResp = await fetch(`${base}${cfg.todayPath}`, { cache: "no-store" });
+                    if (!todayResp.ok) throw new Error(`${cfg.todayPath} ${todayResp.status}`);
+                    const jd = await todayResp.json();
+                    rowsToday = pickRows(jd, PREFERRED_TODAY_TABLES);
+                }
+
                 if (!cancelled) {
                     setMainData(rowsMain);
                     setTodayData(rowsToday);
@@ -225,12 +256,14 @@ const Nba: React.FC = () => {
                 if (!cancelled) setLoading(false);
             }
         })();
-        return () => { cancelled = true; };
-    }, []);
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedDataset]);
 
     const simRows = useMemo(() => simulate(mainData), [mainData]);
 
-    // ── Overall Results / Performance
+    // ── Overall Results / Performance (with Max Bankroll for archives)
     const perf = useMemo(() => {
         const finished = simRows.filter(r => r._result !== "");
         const totalBets = finished.length;
@@ -241,6 +274,17 @@ const Nba: React.FC = () => {
         const totalStake = finished.reduce((a, r) => a + Number(r._stake), 0);
         const avgRoi = totalStake > 0 ? (pnl / totalStake) * 100 : 0;
         const winRate = totalBets > 0 ? (wins / totalBets) * 100 : 0;
+
+        // Max bankroll (consider starting bankroll too)
+        let maxBankroll = START_BANKROLL;
+        let maxBankrollDate = "";
+        for (const r of finished) {
+            if (r._bankrollAfter > maxBankroll) {
+                maxBankroll = r._bankrollAfter;
+                maxBankrollDate = String(r._date || "");
+            }
+        }
+
         return {
             totalBets,
             wins,
@@ -249,6 +293,8 @@ const Nba: React.FC = () => {
             pnl,
             finalBankroll,
             avgRoi: Math.round(avgRoi),
+            maxBankroll,
+            maxBankrollDate,
         };
     }, [simRows]);
 
@@ -271,6 +317,50 @@ const Nba: React.FC = () => {
 
     return (
         <div className="w-full max-w-[1400px] xl:max-w-[1500px] mx-auto px-4 md:px-8 py-6">
+
+            {/* ───────── Old Databases Selector (top) ───────── */}
+            <div className="mb-4 flex flex-col items-center gap-3">
+                <h2 className="text-xl font-semibold text-amber-300 tracking-wide">VIEW DATASET</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                    {(
+                        [
+                            ["live", DATASETS.live.label],
+                            ["2024", DATASETS["2024"].label],
+                            ["2023", DATASETS["2023"].label],
+                        ] as [DatasetKey, string][]
+                    ).map(([key, label]) => {
+                        const active = selectedDataset === key;
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => setSelectedDataset(key)}
+                                className={[
+                                    "px-3 py-1.5 rounded-lg border transition-colors text-sm",
+                                    active
+                                        ? "bg-amber-300 text-black border-amber-300"
+                                        : "bg-[#242424] text-slate-200 border-white/10 hover:bg-[#2e2e2e]",
+                                ].join(" ")}
+                                aria-pressed={active}
+                            >
+                                {label}
+                            </button>
+                        );
+                    })}
+                </div>
+                <p className="text-xs text-slate-400">
+                    {selectedDataset === "live"
+                        ? "Showing current season (includes FAVOURITES TODAY)."
+                        : `Showing archive: ${DATASETS[selectedDataset].label} (no FAVOURITES TODAY).`}
+                </p>
+            </div>
+
+            {/* Optional label above main table when in archive */}
+            {selectedDataset !== "live" && (
+                <div className="rounded-lg bg-[#242424] border border-white/10 px-3 py-2 mb-2 text-center">
+                    <span className="text-slate-300">ARCHIVE:</span>{" "}
+                    <span className="text-amber-300 font-semibold">{DATASETS[selectedDataset].label}</span>
+                </div>
+            )}
 
             {/* MAIN / History with bankroll columns */}
             <div className="rounded-xl bg-[#1d1d1d] shadow-lg overflow-hidden">
@@ -299,9 +389,7 @@ const Nba: React.FC = () => {
                             return (
                                 <tr
                                     key={i}
-                                    className={`${i % 2 === 0 ? "bg-[#2e2e2e]" : ""} hover:bg-amber-300 hover:text-black transition-colors cursor-pointer ${
-                                        isSelected ? "bg-amber-300 text-black" : ""
-                                    } text-center`}
+                                    className={`${i % 2 === 0 ? "bg-[#2e2e2e]" : ""} hover:bg-amber-300 hover:text-black transition-colors cursor-pointer ${isSelected ? "bg-amber-300 text-black" : ""} text-center`}
                                     onClick={() => setSelectedIndexTop(isSelected ? null : i)}
                                 >
                                     <td className={`px-3 py-2 sticky left-0 z-10 ${isSelected ? "bg-amber-300" : "bg-emerald-700"} text-center`}>
@@ -338,7 +426,7 @@ const Nba: React.FC = () => {
                         {!simRows.length && (
                             <tr>
                                 <td colSpan={13} className="px-4 py-6 text-center text-slate-400">
-                                    No rows found in database.json
+                                    No rows found in {selectedDataset === "live" ? "database.json" : `${DATASETS[selectedDataset].label}.json`}
                                 </td>
                             </tr>
                         )}
@@ -347,55 +435,55 @@ const Nba: React.FC = () => {
                 </div>
             </div>
 
-            {/* TODAY */}
-            <section className="rounded-xl bg-[#1d1d1d] shadow-lg p-4 mt-4">
-                <h3 className="text-amber-300 text-xl font-semibold text-center">FAVOURITES TODAY</h3>
-                <div className="mt-3 overflow-auto">
-                    <table className="w-full min-w-[700px] text-slate-100 text-sm">
-                        <thead className="sticky top-0 z-10 bg-emerald-700">
-                        <tr className="text-center">
-                            <th className="px-3 py-2 text-left">Matchup</th>
-                            <th className="px-3 py-2">Prediction</th>
-                            <th className="px-3 py-2">Prediction Strength</th>
-                            <th className="px-3 py-2">Money Line</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {todayData.map((row, i) => {
-                            const isSelected = selectedIndexBottom === i;
-                            const ml = val(row, colTodayML, "");
-                            return (
-                                <tr
-                                    key={i}
-                                    className={`hover:bg-amber-300 hover:text-black transition-colors cursor-pointer ${
-                                        isSelected ? "bg-amber-300 text-black" : i % 2 === 0 ? "bg-[#2e2e2e]" : ""
-                                    }`}
-                                    onClick={() => setSelectedIndexBottom(isSelected ? null : i)}
-                                >
-                                    <td className="px-3 py-2 text-left">{getMatchup(row)}</td>
-                                    <td className="px-3 py-2 text-center">{String(val(row, colTodayPred, ""))}</td>
-                                    <td className="px-3 py-2 text-center">{String(r2(val(row, colTodayStr, "")))}</td>
-                                    <td className="px-3 py-2 text-center">{String(ml)}</td>
-                                </tr>
-                            );
-                        })}
-                        {!todayData.length && (
-                            <tr>
-                                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                                    No rows found in dayOf.json
-                                </td>
+            {/* TODAY (hidden for archives) */}
+            {selectedDataset === "live" && (
+                <section className="rounded-xl bg-[#1d1d1d] shadow-lg p-4 mt-4">
+                    <h3 className="text-amber-300 text-xl font-semibold text-center">FAVOURITES TODAY</h3>
+                    <div className="mt-3 overflow-auto">
+                        <table className="w-full min-w-[700px] text-slate-100 text-sm">
+                            <thead className="sticky top-0 z-10 bg-emerald-700">
+                            <tr className="text-center">
+                                <th className="px-3 py-2 text-left">Matchup</th>
+                                <th className="px-3 py-2">Prediction</th>
+                                <th className="px-3 py-2">Prediction Strength</th>
+                                <th className="px-3 py-2">Money Line</th>
                             </tr>
-                        )}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+                            </thead>
+                            <tbody>
+                            {todayData.map((row, i) => {
+                                const isSelected = selectedIndexBottom === i;
+                                const ml = val(row, colTodayML, "");
+                                return (
+                                    <tr
+                                        key={i}
+                                        className={`hover:bg-amber-300 hover:text-black transition-colors cursor-pointer ${isSelected ? "bg-amber-300 text-black" : i % 2 === 0 ? "bg-[#2e2e2e]" : ""}`}
+                                        onClick={() => setSelectedIndexBottom(isSelected ? null : i)}
+                                    >
+                                        <td className="px-3 py-2 text-left">{getMatchup(row)}</td>
+                                        <td className="px-3 py-2 text-center">{String(val(row, colTodayPred, ""))}</td>
+                                        <td className="px-3 py-2 text-center">{String(r2(val(row, colTodayStr, "")))}</td>
+                                        <td className="px-3 py-2 text-center">{String(ml)}</td>
+                                    </tr>
+                                );
+                            })}
+                            {!todayData.length && (
+                                <tr>
+                                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                                        No rows found in dayOf.json
+                                    </td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
 
             {/* OVERALL RESULTS / PERFORMANCE */}
             <section className="rounded-xl bg-[#1d1d1d] shadow-lg p-5 mb-6 mt-6">
                 <div className="flex items-center justify-center gap-2 mb-5">
                     <h3 className="text-amber-300 text-xl md:text-2xl font-semibold tracking-wide">
-                        OVERALL RESULTS
+                        OVERALL RESULTS {selectedDataset !== "live" ? `— ${DATASETS[selectedDataset].label}` : ""}
                     </h3>
                 </div>
 
@@ -415,6 +503,22 @@ const Nba: React.FC = () => {
                             {money(Math.abs(perf.pnl))}
                         </p>
                     </div>
+
+                    {/* NEW: Max Bankroll (archives only) */}
+                    {selectedDataset !== "live" && (
+                        <div className="bg-[#242424] rounded-xl p-4 border border-white/5">
+                            <div className="flex items-center justify-between">
+                                <p className="text-slate-300">Max Bankroll</p>
+                                <span className="text-xl">🚀</span>
+                            </div>
+                            <p className="text-amber-300 text-2xl font-extrabold mt-1">
+                                {money(perf.maxBankroll)}
+                            </p>
+                            <p className="text-slate-400 text-sm mt-1">
+                                {perf.maxBankrollDate ? `On ${perf.maxBankrollDate}` : "—"}
+                            </p>
+                        </div>
+                    )}
 
                     {/* Total P&L */}
                     <div className="bg-[#242424] rounded-xl p-4 border border-white/5">
