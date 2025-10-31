@@ -370,6 +370,7 @@ const Nba: React.FC = () => {
                 if (!cancelled) setLoading(false);
             }
         })();
+
         return () => {
             cancelled = true;
         };
