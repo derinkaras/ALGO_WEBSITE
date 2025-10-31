@@ -1,14 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 /* ───────────────────── Sim parameters (mirror simulate_bets.py) ───────────────────── */
-const SIM_PARAMS = {
+type SimParams = {
+    INITIAL_BANKROLL: number;
+    PRED_STRENGTH_THRESHOLD: number;
+    MAX_PREDICTION_ML: number;
+    REINVESTMENT_THRESHOLD: number;
+    RESET_BANKROLL_AMOUNT: number;
+    DAILY_INVEST_PERCENT: number;
+};
+const SIM_PARAMS: SimParams = {
     INITIAL_BANKROLL: 3000,
     PRED_STRENGTH_THRESHOLD: 70,
     MAX_PREDICTION_ML: 2.0,
     REINVESTMENT_THRESHOLD: 0,
     RESET_BANKROLL_AMOUNT: 500,
     DAILY_INVEST_PERCENT: 40,
-} as const;
+};
 
 /* Per-season hard start dates (your values) */
 type DatasetKey = "live" | "2024" | "2023";
@@ -202,7 +210,7 @@ function simulateLikePython(mainData: Row[], opts: { startDate: string }): SimRo
             return sb - sa; // strength desc within day (optional, mirrors script)
         });
 
-    let currentBankroll = INITIAL_BANKROLL;
+    let currentBankroll: number = INITIAL_BANKROLL;
     let totalReinvested = 0;
     const out: SimRow[] = [];
 
@@ -293,7 +301,6 @@ const cacheKey = (k: DatasetKey, startDate: string) =>
 const Nba: React.FC = () => {
     const [selectedDataset, setSelectedDataset] = useState<DatasetKey>("live");
 
-    const [mainData, setMainData] = useState<Row[]>([]);
     const [todayData, setTodayData] = useState<Row[]>([]);
     const [simRows, setSimRows] = useState<SimRow[]>([]);
     const [loading, setLoading] = useState(true);
@@ -323,7 +330,6 @@ const Nba: React.FC = () => {
                         const parsed = JSON.parse(cached) as { simRows: SimRow[]; savedAt: string };
                         if (!cancelled) {
                             setSimRows(parsed.simRows);
-                            setMainData([]);
                             setTodayData([]);
                             setLoading(false);
                         }
@@ -331,12 +337,13 @@ const Nba: React.FC = () => {
                     }
                 }
 
-                // Fetch data
+                // Fetch main data
                 const mainResp = await fetch(`${base}${cfg.mainPath}`, { cache: "no-store" });
                 if (!mainResp.ok) throw new Error(`${cfg.mainPath} ${mainResp.status}`);
                 const jm = await mainResp.json();
                 const rowsMain = pickRows(jm, PREFERRED_MAIN_TABLES);
 
+                // Optionally fetch today data for live
                 let rowsToday: Row[] = [];
                 if (cfg.todayPath) {
                     const todayResp = await fetch(`${base}${cfg.todayPath}`, { cache: "no-store" });
@@ -348,7 +355,6 @@ const Nba: React.FC = () => {
                 const sim = simulateLikePython(rowsMain, { startDate: startEff });
 
                 if (!cancelled) {
-                    setMainData(rowsMain);
                     setTodayData(rowsToday);
                     setSimRows(sim);
                 }
