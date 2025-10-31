@@ -65,20 +65,22 @@ const NavBar = () => {
             <div className="w-28 flex justify-end">
                 <button
                     className="
-            relative inline-flex items-center justify-center
-            px-4 py-2 rounded-lg font-semibold
-            bg-brand-yellow text-brand-green
-            hover:cursor-pointer
-            transition-transform duration-100 ease-out
-            shadow-[0_6px_0_rgba(0,0,0,0.25)]
-            hover:translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)]
-            active:translate-y-[2px] active:shadow-[0_0_0_rgba(0,0,0,0.25)]
-            focus:outline-none focus:ring-2 focus:ring-brand-yellow/60
-          "
+    relative inline-flex items-center justify-center
+    px-4 py-2 md:px-4 md:py-2 sm:px-3 sm:py-1 text-sm sm:text-xs md:text-base
+    rounded-lg font-semibold
+    bg-brand-yellow text-brand-green
+    hover:cursor-pointer
+    transition-transform duration-100 ease-out
+    shadow-[0_6px_0_rgba(0,0,0,0.25)]
+    hover:translate-y-[1px] hover:shadow-[0_5px_0_rgba(0,0,0,0.25)]
+    active:translate-y-[2px] active:shadow-[0_0_0_rgba(0,0,0,0.25)]
+    focus:outline-none focus:ring-2 focus:ring-brand-yellow/60
+  "
                     onClick={user ? signOutUser : () => setShowModal(true)}
                 >
                     {user ? "Log Out" : "Sign Up"}
                 </button>
+
             </div>
 
             {showModal && (

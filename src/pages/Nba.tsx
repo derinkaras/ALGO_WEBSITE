@@ -270,12 +270,12 @@ const Nba: React.FC = () => {
     }
 
     return (
-        <div className="w-full max-w-[1200px] mx-auto px-4 md:px-6 py-6">
+        <div className="w-full max-w-[1400px] xl:max-w-[1500px] mx-auto px-4 md:px-8 py-6">
 
             {/* MAIN / History with bankroll columns */}
             <div className="rounded-xl bg-[#1d1d1d] shadow-lg overflow-hidden">
                 <div className="overflow-auto max-h-[600px]">
-                    <table className="w-full min-w-[1200px] text-slate-100 text-sm">
+                    <table className="w-full min-w-[1400px] text-slate-100 text-sm">
                         <thead className="sticky top-0 z-20 bg-emerald-700">
                         <tr className="text-center">
                             <th className="px-3 py-2 sticky left-0 bg-emerald-700 z-30 text-center">Game Date</th>
@@ -390,41 +390,98 @@ const Nba: React.FC = () => {
                     </table>
                 </div>
             </section>
+
             {/* OVERALL RESULTS / PERFORMANCE */}
-            <section className="rounded-xl bg-[#1d1d1d] shadow-lg p-4 mb-4 mt-4">
-                <h3 className="text-amber-300 text-xl font-semibold text-center mb-3">OVERALL RESULTS</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <div className="bg-[#2a2a2a] rounded-lg p-3 text-center">
-                        <p className="text-slate-300">Final Bankroll</p>
-                        <p className="text-amber-300 text-xl font-bold">{money(perf.finalBankroll)}</p>
+            <section className="rounded-xl bg-[#1d1d1d] shadow-lg p-5 mb-6 mt-6">
+                <div className="flex items-center justify-center gap-2 mb-5">
+                    <h3 className="text-amber-300 text-xl md:text-2xl font-semibold tracking-wide">
+                        OVERALL RESULTS
+                    </h3>
+                </div>
+
+                {/* KPI grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                    {/* Final Bankroll */}
+                    <div className="bg-[#242424] rounded-xl p-4 border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <p className="text-slate-300">Final Bankroll</p>
+                            <span className="text-xl">💼</span>
+                        </div>
+                        <p className="text-amber-300 text-2xl font-extrabold mt-1">
+                            {money(perf.finalBankroll)}
+                        </p>
+                        <p className={`mt-1 text-sm ${perf.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                            {perf.pnl >= 0 ? "▲" : "▼"} {perf.pnl >= 0 ? "+" : "-"}
+                            {money(Math.abs(perf.pnl))}
+                        </p>
                     </div>
-                    <div className="bg-[#2a2a2a] rounded-lg p-3 text-center">
-                        <p className="text-slate-300">Total P&amp;L</p>
-                        <p className={`text-xl font-bold ${perf.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+
+                    {/* Total P&L */}
+                    <div className="bg-[#242424] rounded-xl p-4 border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <p className="text-slate-300">Total P&amp;L</p>
+                            <span className="text-xl">📈</span>
+                        </div>
+                        <p className={`text-2xl font-extrabold mt-1 ${perf.pnl >= 0 ? "text-green-400" : "text-red-400"}`}>
                             {perf.pnl >= 0 ? "+" : "-"}{money(Math.abs(perf.pnl))}
                         </p>
+                        <p className="text-slate-400 text-sm mt-1">Since start</p>
                     </div>
-                    <div className="bg-[#2a2a2a] rounded-lg p-3 text-center">
-                        <p className="text-slate-300">Win Rate</p>
-                        <p className="text-amber-300 text-xl font-bold">{perf.winRate}%</p>
+
+                    {/* Win Rate */}
+                    <div className="bg-[#242424] rounded-xl p-4 border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <p className="text-slate-300">Win Rate</p>
+                            <span className="text-xl">🏆</span>
+                        </div>
+                        <p className="text-amber-300 text-2xl font-extrabold mt-1">{perf.winRate}%</p>
+                        <div className="h-2 rounded-full bg-white/10 mt-2 overflow-hidden">
+                            <div
+                                className="h-full bg-emerald-500"
+                                style={{ width: `${Math.min(100, Math.max(0, perf.winRate))}%` }}
+                            />
+                        </div>
                     </div>
-                    <div className="bg-[#2a2a2a] rounded-lg p-3 text-center">
-                        <p className="text-slate-300">Avg ROI / Bet</p>
-                        <p className={`text-xl font-bold ${perf.avgRoi >= 0 ? "text-green-400" : "text-red-400"}`}>
+
+                    {/* Avg ROI / Bet */}
+                    <div className="bg-[#242424] rounded-xl p-4 border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <p className="text-slate-300">Avg ROI / Bet</p>
+                            <span className="text-xl">💹</span>
+                        </div>
+                        <p className={`text-2xl font-extrabold mt-1 ${perf.avgRoi >= 0 ? "text-green-400" : "text-red-400"}`}>
                             {perf.avgRoi}%
                         </p>
+                        <div className="h-2 rounded-full bg-white/10 mt-2 overflow-hidden">
+                            <div
+                                className={`h-full ${perf.avgRoi >= 0 ? "bg-emerald-500" : "bg-red-500"}`}
+                                style={{ width: `${Math.min(100, Math.max(0, Math.abs(perf.avgRoi)))}%` }}
+                            />
+                        </div>
                     </div>
-                    <div className="bg-[#2a2a2a] rounded-lg p-3 text-center">
-                        <p className="text-slate-300">Total Bets</p>
-                        <p className="text-amber-300 text-xl font-bold">{perf.totalBets}</p>
+
+                    {/* Total Bets */}
+                    <div className="bg-[#242424] rounded-xl p-4 border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <p className="text-slate-300">Total Bets</p>
+                            <span className="text-xl">🎯</span>
+                        </div>
+                        <p className="text-amber-300 text-2xl font-extrabold mt-1">{perf.totalBets}</p>
+                        <p className="text-slate-400 text-sm mt-1">≥ 70 strength only</p>
                     </div>
-                    <div className="bg-[#2a2a2a] rounded-lg p-3 text-center">
-                        <p className="text-slate-300">W / L</p>
-                        <p className="text-xl font-bold">
+
+                    {/* W / L */}
+                    <div className="bg-[#242424] rounded-xl p-4 border border-white/5">
+                        <div className="flex items-center justify-between">
+                            <p className="text-slate-300">W / L</p>
+                            <span className="text-xl">⚖️</span>
+                        </div>
+                        <p className="text-2xl font-extrabold mt-1">
                             <span className="text-green-400">{perf.wins}</span>
                             <span className="text-slate-400"> / </span>
                             <span className="text-red-400">{perf.losses}</span>
                         </p>
+                        <p className="text-slate-400 text-sm mt-1">Completed bets</p>
                     </div>
                 </div>
             </section>
