@@ -1,73 +1,113 @@
-# React + TypeScript + Vite
+# 🧠 AlgoWebsite — Sports Prediction Dashboard  
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+🚀 **Live Demo:** [https://algowebsite-5c39.onrender.com](https://algowebsite-5c39.onrender.com)
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🏀 Overview  
 
-## React Compiler
+**AlgoWebsite** is a modern web dashboard that interfaces with my **Python-based Data Pipeline & Prediction Engine**.  
+It provides authenticated users with real-time access to **NBA and MLB prediction results**, detailed analytics, and bankroll simulations — all visualized through a clean, responsive React frontend.  
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The site acts as the **visual layer** for my sports analytics ecosystem, connecting directly to my backend algorithm runner (`NBA_ALGO` and `MLB_ALGO`), which handles game data ingestion, model predictions, and statistical reporting.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## ⚙️ Features  
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 🎯 Core Functionality  
+- **Live Predictions:** Displays ongoing and upcoming game predictions in real time.  
+- **Historical Databases:** Toggle between past seasons (e.g., 2023, 2024) and live datasets.  
+- **Bankroll Simulation:** Run algorithmic simulations that mirror the Python backend’s betting model logic.  
+- **Results Dashboard:** Shows bankroll growth, ROI%, win rate, and total bet stats.  
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### 🔒 Authentication  
+- **Access Control:** Only verified and authorized users can view predictions or access simulation data.  
+- **Private Dashboard:** Secure authentication layer protects all analytics endpoints.  
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 💻 Tech Highlights  
+- **Frontend:** React + TypeScript + TailwindCSS  
+- **Backend Integration:** FastAPI endpoints connected to Python algorithm core  
+- **Caching & Optimization:** LocalStorage archiving and efficient API call handling  
+- **Deployment:** Hosted on [Render](https://render.com) with both frontend and backend live services  
+
+---
+
+## 🧩 Architecture  
+
+```
+Frontend (React + TS)
+│
+├── /components          → Reusable UI blocks (tables, cards, filters)
+├── /services            → API handlers (ExecuteSimulation, FetchData, etc.)
+├── /pages               → Dataset views (Live, 2024, 2023)
+│
+Backend (Python / FastAPI)
+│
+├── app/index.py         → CLI + API runner
+├── app/ExecutionHandler.py
+├── app/NBAGameService.py
+├── app/NBAPredictionService.py
+│
+Data Layer
+│
+├── SQLite databases     → `2024DataBase.db`, `DayOf.db`, etc.
+└── PDF + JSON exports   → Rendered reports & downloadable outputs
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🧠 How It Works  
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Data Collection:** The backend fetches and stores NBA/MLB game data daily.  
+2. **Prediction Generation:** Algorithms compute win probabilities and optimal picks.  
+3. **API Sync:** FastAPI exposes endpoints for frontend consumption.  
+4. **Visualization:** React interface displays predictions, bankrolls, and metrics interactively.  
+5. **Authentication:** Access restricted to allowed users via secure auth layer.  
+
+---
+
+## 🧰 Tech Stack  
+
+| Layer | Technologies |
+|-------|---------------|
+| **Frontend** | React, TypeScript, TailwindCSS |
+| **Backend** | Python, FastAPI |
+| **Database** | SQLite |
+| **Hosting** | Render |
+| **Version Control** | Git + GitHub |
+| **Auth / Security** | JWT / Protected routes |
+
+---
+
+## 🌐 Deployment  
+
+Deployed using **Render** with:
+- React app (static site) on frontend service  
+- Python FastAPI app (backend service) connected to SQLite DB  
+
+🔗 **Live App:** [https://algowebsite-5c39.onrender.com](https://algowebsite-5c39.onrender.com)
+
+---
+
+## 🧾 Roadmap  
+
+- [ ] Add user registration dashboard (admin-approved invites)  
+- [ ] Include live odds comparison widget  
+- [ ] Add graph visualization for bankroll progression  
+- [ ] Integrate email or Telegram alerts for prediction updates  
+
+---
+
+## 👨‍💻 Author  
+
+**Derin Karas**  
+Full-stack developer & sports data analyst  
+🔗 [GitHub Profile](https://github.com/derinkaras)
+
+---
+
+## 🏁 License  
+
+This project is proprietary and for **authorized use only**.  
+All algorithms, data, and code are © 2025 Derin Karas.  
