@@ -28,18 +28,21 @@ class ExecuteSimulation {
     async executeSimulation(data: rowType[]){
         if (!data || data.length === 0) return data;
 
+        const filtered = data.filter((game)=>game.winner !== "UNKNOWN")
         let bankroll = 3000
         let dayBankroll = 3000
         let dayStr = data[0].gameDate
 
-        for (const game of data) {
+        for (const game of filtered) {
+            if (game.winner === "UNKNOWN") {
+                continue
+            }
+
             if (game.gameDate !== dayStr) {
                 bankroll = dayBankroll
                 dayStr = game.gameDate
             }
-            if (game.winner === "UNKNOWN") {
-                continue
-            }
+
             const predML =  game.teamOne === game.prediction ? game.homeML : game.awayML
             game["predML"] = predML
             game["correct"] = game.predictionCorrectness === 1 ? "✔️" : "❌"
@@ -54,8 +57,7 @@ class ExecuteSimulation {
             game["currBankroll"] = Number(dayBankroll.toFixed(2))
         }
 
-        // ✅ return the mutated array
-        return data;
+        return filtered;
     }
 
     async getFavourites() {
@@ -64,24 +66,14 @@ class ExecuteSimulation {
         return data.tables.day_of_predictions
     }
 
-
     async getMainTable() {
         if (this.database === "Live (Current)") {
-            const cache = localStorage.getItem("Live (Current)")
-            if (cache) {
-                try {
-                    const data = JSON.parse(cache);
-                    this.simResults = data
-
-                    return data;
-                } catch {}
-            }
+            // The live database will constantly be updating so there is no need for cache
             const response = await fetch("/data/database.json");
             if (!response.ok) throw new Error("Failed to load JSON");
             const data = await response.json()
             const filtered = data.tables.performance.filter((i:rowType)=>i.predictionStrength >= 75)
             const res = await this.executeSimulation(filtered);
-            localStorage.setItem("Live (Current)", JSON.stringify(res));
             this.simResults = res
             return res;
         } else if (this.database === "2024 Database") {
