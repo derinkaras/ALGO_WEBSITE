@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import ExecuteSimulation from "../services/ExecuteSimulation.ts"
 import {useAuth} from "../contexts/AuthContext.tsx";
 import icons from "../constants/icons.ts";
-import type {BetRow, UserBetRow} from "../types";
+import type {UserBetRow} from "../types";
 import {fetchBets} from "../services/SupabaseServices.ts";
 import Modal from "../components/Modal.tsx";
 import AddOrEditBet from "../components/AddOrEditBet.tsx";
