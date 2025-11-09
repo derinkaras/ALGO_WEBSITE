@@ -8,7 +8,7 @@ type Mode = "Add" | "Edit";
 
 type AddOrEditBetProps = {
     mode: Mode;
-    draft: UserBetRow | null;
+    draft: UserBetRow;
     onClose: () => void;
     setUserBets: React.Dispatch<React.SetStateAction<UserBetRow[]>>;
 };
@@ -18,42 +18,32 @@ const fmtDate = (d?: string) =>
 
 const AddOrEditBet = ({ mode, draft, onClose, setUserBets }: AddOrEditBetProps) => {
     const { session } = useAuth();
-
     const [betAmount, setBetAmount] = useState("");
     const [betAmountError, setBetAmountError] = useState("");
 
     useEffect(() => {
-        if (mode === "Edit" && draft) {
+        if (mode === "Edit") {
             setBetAmount(String(draft.bet_amount));
         } else if (mode === "Add") {
             setBetAmount("");
         }
-    }, [mode, draft]);
+    }, []);
 
     const handleSubmit = async () => {
         try {
-            if (!session) throw new Error("Please sign in to continue.");
-            if (!draft) throw new Error("No game selected.");
             const amt = Number(betAmount);
             if (Number.isNaN(amt) || amt <= 0) throw new Error("Bet amount is invalid, please try again.");
-
-            if (mode === "Add") {
+            if (mode === "Add" && session) {
                 const data = await submitBet(session.user.id, draft, amt);
                 if (!data) throw new Error("There was an issue submitting your bet, please try again.");
                 setUserBets((prev) => [data, ...prev]);
                 onClose();
-                return;
             }
 
             if (mode === "Edit") {
-                if (!draft.id) throw new Error("Missing bet id.");
-                const updated = await editBet(draft.id, amt);
-                // fallback to amt if API didn’t return the row for any reason
-                setUserBets((prev) =>
-                    prev.map((b) => (b.id === draft.id ? { ...b, bet_amount: updated?.bet_amount ?? amt } : b))
-                );
+                await editBet(draft.id, amt);
+                setUserBets((prev) => prev.map((b) => (b.id === draft.id ? { ...b, bet_amount: amt} : b)));
                 onClose();
-                return;
             }
         } catch (err: any) {
             setBetAmount("");
@@ -66,7 +56,6 @@ const AddOrEditBet = ({ mode, draft, onClose, setUserBets }: AddOrEditBetProps) 
             await deleteBet(draft.id)
             setUserBets((prev) => prev.filter((b) => b.id !== draft.id))
             onClose()
-            return
         }
 
     }
@@ -85,10 +74,10 @@ const AddOrEditBet = ({ mode, draft, onClose, setUserBets }: AddOrEditBetProps) 
     return (
         <div
             className="
-      w-full h-full bg-[#1f1f1f] rounded-2xl shadow-2xl
-      px-10 py-12 flex flex-col items-center justify-center
-      space-y-8 border border-white/10
-    "
+                  w-full h-full bg-[#1f1f1f] rounded-2xl shadow-2xl
+                  px-10 py-12 flex flex-col items-center justify-center
+                  space-y-8 border border-white/10
+                "
         >
             {/* Header */}
             <div className="flex flex-col items-center justify-center space-y-2">
@@ -127,7 +116,7 @@ const AddOrEditBet = ({ mode, draft, onClose, setUserBets }: AddOrEditBetProps) 
                         <td className="px-4 py-2">{`${draft.away_team} @ ${draft.home_team}`}</td>
                         <td className="px-4 py-2 text-center">{String(draft.prediction)}</td>
                         <td className="px-4 py-2 text-center">
-                            {Number(draft.prediction_strength).toFixed(2)}
+                            {Number(draft.prediction_strength)}
                         </td>
                         <td className="px-4 py-2 text-center">
                             {Number(draft.ml).toFixed(2)}

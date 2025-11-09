@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import ExecuteSimulation from "../services/ExecuteSimulation.ts"
 import {useAuth} from "../contexts/AuthContext.tsx";
 import icons from "../constants/icons.ts";
-import type {UserBetRow} from "../types";
+import type {BetRow, UserBetRow} from "../types";
 import {fetchBets} from "../services/SupabaseServices.ts";
 import Modal from "../components/Modal.tsx";
 import AddOrEditBet from "../components/AddOrEditBet.tsx";
@@ -13,11 +13,8 @@ const Mlb = () => {
 
     const openAddModal = () => {
         setModalMode("Add");
-        // if you want to prefill from a selected favourite, keep selectedGame as set in the favourites table; otherwise clear:
-        // setSelectedGame(null);
         setShowModal(true);
     };
-
 
     const openEditModal = (bet: UserBetRow) => {
         setModalMode("Edit");
@@ -64,7 +61,7 @@ const Mlb = () => {
 
     // Selected index bottom and show addition will work together
     const [selectedIndexBottom, setSelectedIndexBottom] = useState<number | null>(null);
-    const [selectedGame, setSelectedGame] = useState<UserBetRow | null>(null);
+    const [selectedGame, setSelectedGame] = useState<UserBetRow | BetRow | null>(null);
 
 
     useEffect(() => {

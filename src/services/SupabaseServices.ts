@@ -1,5 +1,5 @@
 import {supabase} from "../supabaseClient.ts";
-import type {BetRow, UserBetRow} from "../types";
+import type {BetRow} from "../types";
 
 export const fetchBets = async () => {
     // Since I have RLS this will only fetch the users rows and the eq is not needed
@@ -25,22 +25,16 @@ export const submitBet = async (userId: string, bet: BetRow, betAmount: number )
 }
 
 
-export const editBet = async (
-    betId: number,
-    betAmount: number
-): Promise<UserBetRow | null> => {
-    const { data, error } = await supabase
+export const editBet = async (betId: number, betAmount: number) => {
+    const { error } = await supabase
         .from("bets_placed")
         .update({ bet_amount: betAmount })
         .eq("id", betId)
-        .select()
-        .single(); // ← returns updated row
 
     if (error) {
         console.error("There was a problem updating user bet: ", error);
         return null;
     }
-    return data;
 };
 
 export const deleteBet = async (betId: number) => {

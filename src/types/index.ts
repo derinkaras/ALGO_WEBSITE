@@ -6,10 +6,8 @@ export type BetRow = {
     ml: number
 }
 
-
 export type UserBetRow = BetRow & {
-    id?: number;
-    created_at?: string; // timestamptz from Supabase
-    bet_amount?: number
-
+    id: number;
+    created_at: string;
+    bet_amount: number
 };
