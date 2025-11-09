@@ -1,10 +1,46 @@
 import {useEffect, useState} from "react";
 import ExecuteSimulation from "../services/ExecuteSimulation.ts"
+import {useAuth} from "../contexts/AuthContext.tsx";
+import icons from "../constants/icons.ts";
+import type {BetRow, UserBetRow} from "../types";
+import {fetchBets} from "../services/SupabaseServices.ts";
+import Modal from "../components/Modal.tsx";
+import AddOrEditBet from "../components/AddOrEditBet.tsx";
 
 const Mlb = () => {
-    const TABS = ["Live (Current)", "2024 Database", "2023 Database"]
-    const [loading, setLoading] = useState<boolean>(false)
+    const [showModal, setShowModal] = useState(false)
+    const [modalMode, setModalMode] = useState<"Add" | "Edit">("Add");
 
+    const openAddModal = () => {
+        setModalMode("Add");
+        // if you want to prefill from a selected favourite, keep selectedGame as set in the favourites table; otherwise clear:
+        // setSelectedGame(null);
+        setShowModal(true);
+    };
+
+
+    const openEditModal = (bet: UserBetRow) => {
+        setModalMode("Edit");
+        setSelectedGame(bet);
+        setShowModal(true);
+    };
+
+    const closeModal = () => {
+        setShowModal(false);
+        setSelectedGame(null); // optional but recommended
+
+    };
+
+
+    const [userBets, setUserBets] = useState<UserBetRow[]>([]);
+    const fmtDate = (d?: string) =>
+        d ? new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—";
+    const n2 = (n: any) =>
+        n === null || n === undefined || isNaN(Number(n)) ? "—" : Number(n).toFixed(2);
+
+
+
+    const TABS = ["Live (Current)", "2024 Database", "2023 Database"]
     type TabStatus = typeof TABS[number]
     type Row = Record<string, any>;
     type SimRow = Row & {
@@ -17,31 +53,54 @@ const Mlb = () => {
         _roiPct: number | "";
     };
 
+    const [loading, setLoading] = useState<boolean>(false)
+    const {session} = useAuth()
+
     const [currTab, setCurrTab] = useState<TabStatus>("Live (Current)")
     const [databaseTableData, setDatabaseTableData] = useState<SimRow[]>([])
     const [todaysFavData, setTodaysFavData] = useState<SimRow[]>([])
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-    const [selectedIndexBottom, setSelectedIndexBottom] = useState<number | null>(null);
     const [winRate, setWinRate] = useState<Record<string, number>>({})
 
+    // Selected index bottom and show addition will work together
+    const [selectedIndexBottom, setSelectedIndexBottom] = useState<number | null>(null);
+    const [selectedGame, setSelectedGame] = useState<UserBetRow | null>(null);
+
+
     useEffect(() => {
-        const run = async ()=>{
-            setLoading(true)
-            setSelectedIndex(null)
-            setSelectedIndexBottom(null)
-            if (currTab) {
-                const sim = new ExecuteSimulation(currTab);
-                const data = await sim.getMainTable()
-                setDatabaseTableData(data)
-                const dayData = await sim.getFavourites()
-                setTodaysFavData(dayData)
-                const winRate = await sim.getWinRate()
-                setWinRate(winRate)
+            const run = async ()=>{
+                setLoading(true)
+                setSelectedIndex(null)
+                setSelectedIndexBottom(null)
+                if (currTab) {
+                    const sim = new ExecuteSimulation(currTab);
+                    const data = await sim.getMainTable()
+                    setDatabaseTableData(data)
+                    const dayData = await sim.getFavourites()
+                    setTodaysFavData(dayData)
+                    const winRate = await sim.getWinRate()
+                    setWinRate(winRate)
+                }
+                setLoading(false)
             }
-            setLoading(false)
+            run()
+        }, [currTab])
+
+
+    useEffect(() => {
+        const fetch = async () => {
+            if (session) {
+                console.log("Gets here")
+                const bets = await fetchBets()
+                if (bets) {
+                    setUserBets(bets)
+                }
+            }
         }
-        run()
-    }, [currTab])
+        fetch()
+    }, [session]);
+
+
 
     return (
         <div className="w-full max-w-[1400px] xl:max-w-[1500px] mx-auto px-4 md:px-8 py-6">
@@ -168,13 +227,43 @@ const Mlb = () => {
                                                 className={`hover:bg-amber-300 hover:text-black transition-colors cursor-pointer ${
                                                     isSelected ? "bg-amber-300 text-black" : index % 2 === 0 ? "bg-[#2e2e2e]" : ""
                                                 }`}
-                                                onClick={() => setSelectedIndexBottom(isSelected ? null : index)}
+                                                onClick={() => {
+                                                    setSelectedIndexBottom(isSelected ? null : index)
+                                                    setSelectedGame({
+                                                        home_team: home,
+                                                        away_team: away,
+                                                        prediction: pred,
+                                                        prediction_strength: strength,
+                                                        ml
+                                                    })
+                                                }}
                                             >
-                                                <td className="px-3 py-2 text-left">{`${away || "Away"} @ ${home || "Home"}`}</td>
-                                                <td className="px-3 py-2 text-center">{String(pred)}</td>
-                                                <td className="px-3 py-2 text-center">
-                                                    {Number.isFinite(Number(strength)) ? Math.round(Number(strength)) : String(strength)}
+                                                <td className="px-3 py-2 text-left">{`${away} @ ${home}`}</td>
+                                                <td className="px-3 py-2 text-center">{pred}</td>
+                                                <td className="px-3 py-2 text-center relative group">
+                                                    {session ? (
+                                                        strength
+                                                    ) : (
+                                                        <>
+                                                            {/* Blurred placeholder value */}
+                                                            <span className="blur-sm select-none inline-block w-full">{String(strength ?? "—")}</span>
+
+                                                            {/* Hover overlay */}
+                                                            <div
+                                                                className="
+                                                                  absolute inset-0 flex items-center justify-center
+                                                                  bg-black/70 text-amber-300 text-[11px] sm:text-xs font-medium
+                                                                  rounded opacity-0 group-hover:opacity-100 transition-opacity
+                                                                  pointer-events-none
+                                                                "
+                                                            >
+                                                                Sign in to view
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </td>
+
+
                                                 <td className="px-3 py-2 text-center">{String(ml)}</td>
                                             </tr>
                                         );
@@ -274,7 +363,124 @@ const Mlb = () => {
                             </div>
                         </section>
                     )}
+                    {(session && currTab === "Live (Current)") && (
+                        <div className="rounded-xl bg-[#1d1d1d] shadow-lg p-5 mb-6 mt-6 flex flex-col justify-center items-center">
 
+                            {/*TITLE*/}
+                            <div className="flex justify-center items-center">
+                                <h3 className="text-amber-300 text-xl md:text-2xl font-semibold tracking-wide">
+                                    RECORD BETS
+                                </h3>
+                            </div>
+
+                            {/*Main Display*/}
+                            <div>
+                                <button
+                                    onClick={openAddModal}
+                                >
+                                    <img
+                                        src={icons.plus}
+                                        className="size-6 contain-content hover:cursor-pointer"
+                                    />
+                                </button>
+
+                                <div className="mt-4 rounded-xl border border-white/10 bg-[#242424]">
+                                    <div className="flex items-center justify-between px-4 py-3">
+                                        <h4 className="text-amber-300 font-semibold">Your Bets</h4>
+                                        <span className="text-xs text-slate-400">{userBets.length} total</span>
+                                    </div>
+
+                                    {/* Responsive scroll area: ~3 cards on mobile, taller on desktop */}
+                                    <div className="
+                                        px-3 pb-3
+                                        overflow-y-auto
+                                        max-h-[500px]          /* ~3 cards on mobile */
+                                        sm:max-h-[650px]
+                                        lg:max-h-[800px]
+                                      ">
+                                        {/* Responsive grid of cards */}
+                                        <div
+                                            className="
+                                                grid gap-3
+                                                grid-cols-1
+                                                sm:grid-cols-2
+                                                lg:grid-cols-3
+                                                xl:grid-cols-4
+                                              "
+                                            role="list"
+                                        >
+                                            {userBets.length === 0 && (
+                                                <div className="col-span-full text-center text-slate-400 py-6">
+                                                    No bets recorded yet.
+                                                </div>
+                                            )}
+
+                                            {userBets.map((bet: UserBetRow, i) => (
+                                                <div
+                                                    key={bet.id ?? i}
+                                                    className="rounded-lg bg-[#2e2e2e] border border-white/5 p-3"
+                                                    role="listitem"
+                                                    onClick={()=>openEditModal(bet)}
+                                                >
+                                                    {/* Header: Date + Stake */}
+                                                    <div className="flex items-center justify-between">
+                                                        <p className="text-xs text-slate-400">{fmtDate(bet.created_at)}</p>
+                                                        <p className="text-xs text-slate-400">
+                                                            Stake: <span className="text-slate-200">${n2(bet.bet_amount)}</span>
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Matchup */}
+                                                    <p className="mt-1 text-sm text-slate-200 break-words">
+                                                        <span className="font-medium">{bet.away_team}</span>
+                                                        <span className="text-slate-400"> @ </span>
+                                                        <span className="font-medium">{bet.home_team}</span>
+                                                    </p>
+
+                                                    {/* Info grid */}
+                                                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                                                        <div className="rounded-md bg-[#242424] border border-white/5 p-2">
+                                                            <p className="text-slate-400">Pick</p>
+                                                            <p className="text-slate-100">{String(bet.prediction ?? "—")}</p>
+                                                        </div>
+                                                        <div className="rounded-md bg-[#242424] border border-white/5 p-2">
+                                                            <p className="text-slate-400">Strength</p>
+                                                            <p className="text-slate-100">{n2(bet.prediction_strength)}</p>
+                                                        </div>
+                                                        <div className="rounded-md bg-[#242424] border border-white/5 p-2">
+                                                            <p className="text-slate-400">Money Line</p>
+                                                            <p className="text-slate-100">{n2(bet.ml)}</p>
+                                                        </div>
+                                                        <div className="rounded-md bg-[#242424] border border-white/5 p-2">
+                                                            <p className="text-slate-400">Date</p>
+                                                            <p className="text-slate-100">{fmtDate(bet.created_at)}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal */}
+                            {showModal && (
+                                <Modal
+                                    handleCloseModal={closeModal}
+                                    size="lg"
+                                >
+                                    <AddOrEditBet
+                                        mode={modalMode}
+                                        draft={selectedGame}
+                                        onClose={closeModal}
+                                        setUserBets={setUserBets}
+                                    />
+                                </Modal>
+                            )}
+
+                        </div>
+
+                    )}
 
                 </div>
             )}

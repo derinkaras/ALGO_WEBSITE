@@ -7,19 +7,17 @@ import useKeepAlive from "./hooks/useKeepAlive.ts";
 
 function App() {
     useKeepAlive()
-
-  return (
-      <div className="bg-brand-gray text-white min-h-screen min-w-full">
-          <NavBar/>
-          <Routes>
+    return (
+        <div className="bg-brand-gray text-white min-h-screen min-w-full">
+            <NavBar/>
+            <Routes>
               <Route index element={<Home/>} />
               <Route path="/home" element={<Home/>}/>
               <Route path="/nba" element={<Nba/>} />
               <Route path="/mlb" element={<Mlb/>} />
-          </Routes>
-      </div>
-
-  )
+            </Routes>
+        </div>
+    )
 }
 
 export default App

@@ -84,7 +84,10 @@ const NavBar = () => {
             </div>
 
             {showModal && (
-                <Modal handleCloseModal={() => setShowModal(false)}>
+                <Modal
+                    handleCloseModal={() => setShowModal(false)}
+                    size="md"
+                >
                     <SignUp handleCloseModal={() => setShowModal(false)} />
                 </Modal>
             )}
