@@ -1,6 +1,6 @@
 import {useEffect, useState} from "react";
 import {deleteBet, editBet, submitBet} from "../services/SupabaseServices.ts";
-import type { UserBetRow } from "../types";
+import type {BetRow, UserBetRow} from "../types";
 import { useAuth } from "../contexts/AuthContext.tsx";
 import icons from "../constants/icons.ts";
 
@@ -8,7 +8,7 @@ type Mode = "Add" | "Edit";
 
 type AddOrEditBetProps = {
     mode: Mode;
-    draft: UserBetRow;
+    draft: UserBetRow | BetRow | null;
     onClose: () => void;
     setUserBets: React.Dispatch<React.SetStateAction<UserBetRow[]>>;
 };
@@ -23,11 +23,24 @@ const AddOrEditBet = ({ mode, draft, onClose, setUserBets }: AddOrEditBetProps) 
 
     useEffect(() => {
         if (mode === "Edit") {
-            setBetAmount(String(draft.bet_amount));
+            setBetAmount(String((draft as UserBetRow).bet_amount))
         } else if (mode === "Add") {
             setBetAmount("");
         }
     }, []);
+
+
+    if (!draft) {
+        return (
+            <div className="rounded-2xl bg-[#1f1f1f] border border-white/10 p-4 text-slate-200">
+                <p className="mb-4">No game selected, click on one of today's favourites to select.</p>
+                <button className="px-4 py-2 rounded-lg bg-amber-300 text-black" onClick={onClose}>
+                    Close
+                </button>
+            </div>
+        );
+    }
+
 
     const handleSubmit = async () => {
         try {
@@ -41,8 +54,8 @@ const AddOrEditBet = ({ mode, draft, onClose, setUserBets }: AddOrEditBetProps) 
             }
 
             if (mode === "Edit") {
-                await editBet(draft.id, amt);
-                setUserBets((prev) => prev.map((b) => (b.id === draft.id ? { ...b, bet_amount: amt} : b)));
+                await editBet((draft as UserBetRow).id, amt);
+                setUserBets((prev) => prev.map((b) => (b.id === (draft as UserBetRow).id ? { ...b, bet_amount: amt} : b)));
                 onClose();
             }
         } catch (err: any) {
@@ -52,24 +65,14 @@ const AddOrEditBet = ({ mode, draft, onClose, setUserBets }: AddOrEditBetProps) 
     };
 
     const handleDelete = async () => {
-        if (draft && draft.id) {
-            await deleteBet(draft.id)
-            setUserBets((prev) => prev.filter((b) => b.id !== draft.id))
-            onClose()
-        }
+        await deleteBet( (draft as UserBetRow).id)
+        setUserBets((prev) => prev.filter((b) => b.id !== (draft as UserBetRow).id))
+        onClose()
+
 
     }
 
-    if (!draft) {
-        return (
-            <div className="rounded-2xl bg-[#1f1f1f] border border-white/10 p-4 text-slate-200">
-                <p className="mb-4">No game selected, click on one of today's favourites to select.</p>
-                <button className="px-4 py-2 rounded-lg bg-amber-300 text-black" onClick={onClose}>
-                    Close
-                </button>
-            </div>
-        );
-    }
+
 
     return (
         <div
@@ -121,7 +124,7 @@ const AddOrEditBet = ({ mode, draft, onClose, setUserBets }: AddOrEditBetProps) 
                         <td className="px-4 py-2 text-center">
                             {Number(draft.ml).toFixed(2)}
                         </td>
-                        <td className="px-4 py-2 text-center">{fmtDate(draft.created_at)}</td>
+                        <td className="px-4 py-2 text-center">{fmtDate((draft as UserBetRow).created_at)}</td>
                     </tr>
                     </tbody>
                 </table>
