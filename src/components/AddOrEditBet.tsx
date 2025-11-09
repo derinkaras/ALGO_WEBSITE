@@ -23,7 +23,7 @@ const AddOrEditBet = ({ mode, draft, onClose, setUserBets }: AddOrEditBetProps) 
     const [betAmountError, setBetAmountError] = useState("");
 
     useEffect(() => {
-        if (mode === "Edit") {
+        if (mode === "Edit" && draft) {
             setBetAmount(String(draft.bet_amount));
         } else if (mode === "Add") {
             setBetAmount("");
