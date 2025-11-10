@@ -29,9 +29,14 @@ class ExecuteSimulation {
     }
 
     private async loadMainJson(): Promise<any> {
-        if (this.database === "Live (Current)") {
-            // 🔄 Build on server, wait, then fetch JSON
-            return await fetchMainJson();
+        // if (this.database === "Live (Current)") {
+        //     // 🔄 Build on server, wait, then fetch JSON
+        //     return await fetchMainJson();
+        // }
+
+        if (this.database == "Live (Current)") {
+            const res = await fetch("/data/database.json")
+            return res.json()
         }
 
         const path =
@@ -44,10 +49,11 @@ class ExecuteSimulation {
     }
 
     private async loadDayOfJson(): Promise<any> {
-        if (this.database === "Live (Current)") {
-            // 🔄 Build day-of on server, wait, then fetch JSON
-            return await fetchDayOfJson();
-        }
+        // if (this.database === "Live (Current)") {
+        //     // 🔄 Build day-of on server, wait, then fetch JSON
+        //     return await fetchDayOfJson();
+        // }
+        // RESET LATER IF YOU WANT TO USE THE API
         const res = await fetch("/data/dayOf.json"); // or another static fallback
         if (!res.ok) {
             return { tables: {} };
