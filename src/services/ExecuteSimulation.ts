@@ -1,4 +1,4 @@
-import {fetchDayOfJson, fetchMainJson} from "./DataApi.ts";
+// import {fetchDayOfJson, fetchMainJson} from "./DataApi.ts";
 
 type rowType = {
     id: number;
@@ -33,6 +33,7 @@ class ExecuteSimulation {
         //     // 🔄 Build on server, wait, then fetch JSON
         //     return await fetchMainJson();
         // }
+        // RESET LATER IF YOU WANT TO USE THE API
 
         if (this.database == "Live (Current)") {
             const res = await fetch("/data/database.json")
