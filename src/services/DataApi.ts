@@ -35,13 +35,13 @@ async function fetchAndCache(
     // ✅ check cache
     const cached = localStorage.getItem(cacheKey);
     if (cached) {
-        try {
-            const parsed = JSON.parse(cached);
-            if (parsed.date === today && parsed.data) {
-                console.log(`[Cache] Using ${type} JSON from cache (${today})`);
-                return parsed.data;
-            }
-        } catch {}
+
+        const parsed = JSON.parse(cached);
+        if (parsed.date === today && parsed.data) {
+            console.log(`[Cache] Using ${type} JSON from cache (${today})`);
+            return parsed.data;
+        }
+
     }
 
     // ⏳ Not cached or new day → trigger backend build

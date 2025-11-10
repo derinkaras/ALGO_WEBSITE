@@ -56,8 +56,6 @@ class ExecuteSimulation {
     }
 
 
-
-
     async executeSimulation(data: rowType[]){
         if (!data || data.length === 0) return data;
 
@@ -94,10 +92,8 @@ class ExecuteSimulation {
     }
 
     async getFavourites() {
-        if (this.database === "Live (Current)") {
-            const data = await this.loadDayOfJson();
-            return data.tables.day_of_predictions;
-        }
+        const data = await this.loadDayOfJson();
+        return data.tables.day_of_predictions;
     }
 
 

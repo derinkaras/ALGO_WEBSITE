@@ -73,6 +73,7 @@ const Mlb = () => {
                     const sim = new ExecuteSimulation(currTab);
                     const data = await sim.getMainTable()
                     setDatabaseTableData(data)
+
                     const dayData = await sim.getFavourites()
                     setTodaysFavData(dayData)
                     const winRate = await sim.getWinRate()
@@ -128,7 +129,7 @@ const Mlb = () => {
 
             {loading ? (
                 <div className="px-6 py-10 text-center text-slate-200">
-                    <p className="opacity-70 mt-2">Loading data…</p>
+                    <p className="opacity-70 mt-2">Loading data (Takes a few minutes for daily first time requests)…</p>
                 </div>
             ): (
                 <div>
@@ -239,7 +240,7 @@ const Mlb = () => {
                                                 <td className="px-3 py-2 text-center">{pred}</td>
                                                 <td className="px-3 py-2 text-center relative group">
                                                     {session ? (
-                                                        strength
+                                                        strength ?? 0
                                                     ) : (
                                                         <>
                                                             {/* Blurred placeholder value */}
