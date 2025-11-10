@@ -1,3 +1,5 @@
+import {fetchDayOfJson, fetchMainJson} from "./DataApi.ts";
+
 type rowType = {
     id: number;
     gameDate: string;
@@ -20,10 +22,41 @@ type rowType = {
 class ExecuteSimulation {
     database: string;
     simResults: rowType[]
+
     constructor(database: string) {
         this.database = database;
         this.simResults = []
     }
+
+    private async loadMainJson(): Promise<any> {
+        if (this.database === "Live (Current)") {
+            // 🔄 Build on server, wait, then fetch JSON
+            return await fetchMainJson();
+        }
+
+        const path =
+            this.database === "2024 Database"
+                ? "/data/2024Database.json"
+                : "/data/2023Database.json";
+        const res = await fetch(path);
+        if (!res.ok) throw new Error(`Failed to load ${path}`);
+        return res.json();
+    }
+
+    private async loadDayOfJson(): Promise<any> {
+        if (this.database === "Live (Current)") {
+            // 🔄 Build day-of on server, wait, then fetch JSON
+            return await fetchDayOfJson();
+        }
+        const res = await fetch("/data/dayOf.json"); // or another static fallback
+        if (!res.ok) {
+            return { tables: {} };
+        }
+        return res.json();
+    }
+
+
+
 
     async executeSimulation(data: rowType[]){
         if (!data || data.length === 0) return data;
@@ -61,58 +94,63 @@ class ExecuteSimulation {
     }
 
     async getFavourites() {
-        const res = await fetch("/data/dayOf.json")
-        const data = await res.json()
-        return data.tables.day_of_predictions
+        if (this.database === "Live (Current)") {
+            const data = await this.loadDayOfJson();
+            return data.tables.day_of_predictions;
+        }
     }
+
 
     async getMainTable() {
         if (this.database === "Live (Current)") {
-            // The live database will constantly be updating so there is no need for cache
-            const response = await fetch("/data/database.json");
-            if (!response.ok) throw new Error("Failed to load JSON");
-            const data = await response.json()
-            const filtered = data.tables.performance.filter((i:rowType)=>i.predictionStrength >= 75)
+            const data = await this.loadMainJson();
+            const filtered = data.tables.performance
+                .filter((i: rowType) => i.predictionStrength >= 70);
             const res = await this.executeSimulation(filtered);
-            this.simResults = res
+            this.simResults = res;
             return res;
+
         } else if (this.database === "2024 Database") {
-            const cache = localStorage.getItem("2024 Database")
+            const cache = localStorage.getItem("2024 Database");
             if (cache) {
                 try {
                     const data = JSON.parse(cache);
-                    this.simResults = data
+                    this.simResults = data;
                     return data;
                 } catch {}
             }
             const response = await fetch("/data/2024Database.json");
             if (!response.ok) throw new Error("Failed to load JSON");
-            const data = await response.json()
-            const filtered = data.tables.performance.filter((i:rowType)=>i.predictionStrength >= 70)
+            const data = await response.json();
+            const filtered = data.tables.performance
+                .filter((i: rowType) => i.predictionStrength >= 70);
             const res = await this.executeSimulation(filtered);
             localStorage.setItem("2024 Database", JSON.stringify(res));
-            this.simResults = res
+            this.simResults = res;
             return res;
+
         } else if (this.database === "2023 Database") {
-            const cache = localStorage.getItem("2023 Database")
+            const cache = localStorage.getItem("2023 Database");
             if (cache) {
                 try {
                     const data = JSON.parse(cache);
-                    this.simResults = data
+                    this.simResults = data;
                     return data;
                 } catch {}
             }
             const response = await fetch("/data/2023Database.json");
             if (!response.ok) throw new Error("Failed to load JSON");
-            const data = await response.json()
-            const filtered = data.tables.performance.filter((i:rowType)=>i.predictionStrength >= 75)
+            const data = await response.json();
+            const filtered = data.tables.performance
+                .filter((i: rowType) => i.predictionStrength >= 70);
             const res = await this.executeSimulation(filtered);
             localStorage.setItem("2023 Database", JSON.stringify(res));
-            this.simResults = res
-
+            this.simResults = res;
             return res;
         }
     }
+
+
 
     async getWinRate() {
         let wins = 0
