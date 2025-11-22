@@ -66,7 +66,12 @@ class ExecuteSimulation {
     async executeSimulation(data: rowType[]){
         if (!data || data.length === 0) return data;
 
-        const filtered = data.filter((game)=>game.winner !== "UNKNOWN")
+        const filtered = data.filter((game)=> {
+            if (game.winner === "UNKNOWN") return false;
+            const predML =  game.teamOne === game.prediction ? game.homeML : game.awayML
+            return predML <= 2.0;
+            }
+        )
         let bankroll = 3000
         let dayBankroll = 3000
         let dayStr = data[0].gameDate
@@ -82,6 +87,7 @@ class ExecuteSimulation {
             }
 
             const predML =  game.teamOne === game.prediction ? game.homeML : game.awayML
+
             game["predML"] = predML
             game["correct"] = game.predictionCorrectness === 1 ? "✔️" : "❌"
 
